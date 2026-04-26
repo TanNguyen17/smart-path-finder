@@ -163,7 +163,7 @@ def compare_algorithms(graph, queries, label="Algorithm Comparison"):
     """Compare Standard vs Bidirectional Dijkstra on distance queries."""
     from algorithms import dijkstra_distance, bidirectional_dijkstra_distance
 
-    print(f"\n=== {label} ===")
+    print(f"\n=== Scenario 5: {label} ===")
 
     standard_times = []
     bidir_times = []
@@ -216,7 +216,7 @@ def compare_departure_hours(graph, source, destination):
     """Show how the same route varies across different departure hours."""
     from algorithms import dijkstra_time
 
-    print(f"\n=== Departure-Hour Impact: {source} -> {destination} ===")
+    print(f"\n=== Scenario 4: Departure-Hour Impact ({source} -> {destination}) ===")
     print(f"{'Hour':>6}  {'Travel Time':>12}  {'Nodes Explored':>15}  {'Path Length':>12}")
     print("-" * 55)
 
@@ -248,7 +248,7 @@ def scaling_analysis(sizes=None, num_queries=20, seed=42):
     if sizes is None:
         sizes = [(20, 20), (30, 30), (50, 50), (70, 70), (100, 100)]
 
-    print(f"\n=== Graph-Size Scaling Analysis ===")
+    print(f"\n=== Scenario 6: Graph-Size Scaling Analysis ===")
     print(f"{'Size':>10}  {'Nodes':>7}  {'Edges':>7}  "
           f"{'Avg ms':>8}  {'Avg Explored':>13}  {'E·logV':>10}")
     print("-" * 68)
@@ -300,7 +300,7 @@ def test_cache_effectiveness(graph, cache, queries):
     """
     from cache import PathCache, run_query_cached
 
-    print("\n=== Cache Effectiveness ===")
+    print("\n=== Scenario 7: Cache Effectiveness (Hit vs Miss) ===")
 
     # Use a fresh cache for this test
     test_cache = PathCache()
@@ -380,8 +380,7 @@ if __name__ == "__main__":
     compare_departure_hours(graph, "0_0", "69_69")
 
     # ---- Scenario 5: Algorithm comparison ----
-    compare_algorithms(graph, queries,
-                       "Scenario 5: Standard vs Bidirectional Dijkstra")
+    compare_algorithms(graph, queries, "Standard vs Bidirectional Dijkstra")
 
     # ---- Scenario 6: Graph-size scaling ----
     scaling_analysis(
