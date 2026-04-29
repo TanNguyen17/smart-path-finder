@@ -62,7 +62,9 @@ class PathCache:
 
     def invalidate(self):
         """Invalidate the entire cache (e.g. after a weekly data update)."""
+        removed = len(self.cache)
         self.cache.clear()
+        return removed
 
     def size(self):
         """Return the number of cached entries."""
@@ -77,7 +79,7 @@ def run_query_cached(graph, cache, source, destination,
 
     Returns (result_dict, cache_hit: bool).
     """
-    from algorithms import dijkstra_distance, dijkstra_time
+    from algorithms import dijkstra_distance, dijkstra_time, bidirectional_dijkstra_distance
 
     avoid_nodes = avoid_nodes or set()
     avoid_edges = avoid_edges or set()
@@ -90,8 +92,8 @@ def run_query_cached(graph, cache, source, destination,
 
     # 2. Cache miss: compute
     if mode == "distance":
-        result = dijkstra_distance(graph, source, destination,
-                                   avoid_nodes, avoid_edges, departure_hour)
+        result = bidirectional_dijkstra_distance(graph, source, destination,
+                                                 avoid_nodes, avoid_edges, departure_hour)
     elif mode == "time":
         result = dijkstra_time(graph, source, destination,
                                avoid_nodes, avoid_edges, departure_hour)
@@ -163,7 +165,7 @@ def precompute_hub_paths(graph, cache, hubs, departure_hours=None):
     return count
 
 
-def simulate_weekly_update(graph, cache, hubs=None, departure_hours=None):
+def simulate_weekly_update(graph, cache, hubs=None, departure_hours=None, seed=None):
     """
     Simulate weekly travel time update:
     1. Invalidate cache
@@ -171,12 +173,22 @@ def simulate_weekly_update(graph, cache, hubs=None, departure_hours=None):
 
     Returns: number of paths precomputed (0 if no hubs provided)
     """
-    cache.invalidate()
-    print(f"Cache invalidated. Size: {cache.size()}")
+    from generator import update_travel_times
 
+    old_version = getattr(graph, "data_version", 1)
+    updated_edges = update_travel_times(graph, seed=seed)
+    graph.data_version = old_version + 1
+    removed = cache.invalidate()
+
+    precomputed = 0
     if hubs:
-        count = precompute_hub_paths(graph, cache, hubs, departure_hours)
-        print(f"Re-precomputed {count} hub paths. Cache size: {cache.size()}")
-        return count
+        precomputed = precompute_hub_paths(graph, cache, hubs, departure_hours)
 
-    return 0
+    return {
+        "old_version": old_version,
+        "new_version": graph.data_version,
+        "cache_size": cache.size(),
+        "cache_entries_removed": removed,
+        "precomputed_paths": precomputed,
+        "updated_edges": updated_edges
+    }

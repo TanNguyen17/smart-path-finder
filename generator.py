@@ -186,6 +186,53 @@ def generate_graph(
 
     return graph
 
+def update_travel_times(
+    graph, 
+    local_speed=40.0,
+    highway_speed=80.0,
+    highway_distance_threshold=2.0,
+    seed=None 
+):
+    """
+    Simulate a periodic traffic-data update.
+
+    Distances stay fixed. Only each edge's 24 hourly travel-time values change.
+    The graph is undirected, so both stored directions are updated together.
+    """
+
+    if seed is not None:
+        random.seed(seed)
+
+    profile = default_traffic_profile()
+    updated = 0
+    seen = set() 
+
+    for u in list(graph.adjacent.keys()):
+        for index, (v, distance, _) in enumerate(list(graph.adjacent[u])):
+            key = undirect_key(u, v)
+            if key in seen:
+                continue
+            seen.add(key)
+            
+            if distance < highway_distance_threshold:
+                speed = local_speed
+                noise_min, noise_max = 0.95, 1.05
+            else:
+                speed = highway_speed
+                noise_min, noise_max = 0.9, 1.05
+            
+            new_times = build_travel_times(
+                distance, speed, profile, noise_min, noise_max
+            )
+            
+            graph.adjacent[u][index] = (v, distance, new_times)
+            for rev_index, (neighbor, rev_distance, _) in enumerate(list(graph.adjacent[v])):
+                if neighbor == u:
+                    graph.adjacent[v][rev_index] = (u, distance, new_times.copy())
+                    break
+            updated += 1
+            
+    return updated
 
 if __name__ == "__main__":
     graph = generate_graph(

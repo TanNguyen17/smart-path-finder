@@ -1,5 +1,5 @@
 """
-graph.py — Weighted directed graph using an adjacency list.
+graph.py — Weighted undirected graph using an adjacency list.
 
 Representation
 --------------
@@ -28,6 +28,7 @@ class Graph:
     def __init__(self):
         self.adjacent = {}   # node_id -> [(neighbor, distance, [24 travel times])]
         self.nodes = set()   # set of all node IDs
+        self.data_version = 1
 
     def add_edge(self, u, v, distance, travel_times):
         """
@@ -95,6 +96,7 @@ class Graph:
     def save(self, filepath):
         """Serialise the graph to a JSON file."""
         payload = {
+            "data_version": self.data_version,
             "nodes": list(self.nodes),
             "adjacent": {}
         }
@@ -118,6 +120,7 @@ class Graph:
             payload = json.load(f)
 
         graph = cls()
+        graph.data_version = int(payload.get("data_version", 1))
 
         for node in payload["nodes"]:
             graph._add_node(node)
