@@ -18,6 +18,8 @@ def node_id_from_cell(r, c, cols, id_mode="str"):
     """Convert a grid cell (row, col) to a node identifier."""
     if id_mode == "int":
         return r * cols + c
+    if id_mode == "seq":
+        return str(r * cols + c + 1)   # 1-based sequential string ID
     return f"{r}_{c}"
 
 
@@ -69,7 +71,8 @@ def generate_graph(
     highway_speed=80.0,
     min_highway_grid_dist=12,
     seed=42,
-    id_mode="str"
+    id_mode="str",
+    verbose=False
 ):
     """
     Generate a synthetic road-network graph.
@@ -83,7 +86,9 @@ def generate_graph(
     highway_speed          : speed on highways
     min_highway_grid_dist  : minimum Manhattan distance for highways
     seed                   : random seed for reproducibility
-    id_mode                : "str" for "r_c" labels, "int" for integer IDs
+    id_mode                : "str" for "r_c" labels, "int" for integer IDs,
+                             "seq" for sequential 1-based string IDs
+    verbose                : if True, print each node/edge as it is created
 
     Returns
     -------
@@ -96,15 +101,29 @@ def generate_graph(
     cell_to_id = {}
     existing_edges = set()  # prevent duplicate undirected edges
 
-    # 1. Create nodes
+    # 1. Create nodes — sequential counter, independent of row/col
+    if verbose:
+        print(f"\n  Phase 1/4: Creating {rows * cols} nodes (intersections)...")
+    node_counter = 0
     for r in range(rows):
         for c in range(cols):
-            node_id = node_id_from_cell(r, c, cols, id_mode)
+            if id_mode == "seq":
+                node_counter += 1
+                node_id = str(node_counter)
+            else:
+                node_id = node_id_from_cell(r, c, cols, id_mode)
             graph._add_node(node_id)
             cell_to_id[(r, c)] = node_id
+            if verbose:
+                print(f"    Node {node_id:>6} created at (Row {r}, Col {c})")
+    if verbose:
+        print(f"  -> {graph.node_count()} nodes created.")
+
+    edge_counter = 0
 
     def add_road_by_cells(r1, c1, r2, c2, speed, noise_min, noise_max,
                           road_kind):
+        nonlocal edge_counter
         u = cell_to_id[(r1, c1)]
         v = cell_to_id[(r2, c2)]
         key = undirect_key(u, v)
@@ -130,10 +149,22 @@ def generate_graph(
         travel_times = build_travel_times(distance, speed, profile,
                                           noise_min, noise_max)
         graph.add_edge(u, v, distance, travel_times)
+        edge_counter += 1
+
+        if verbose:
+            kind_label = {"local_straight": "local road",
+                          "local_diagonal": "diagonal shortcut",
+                          "highway": "highway"}
+            label = kind_label.get(road_kind, road_kind)
+            print(f"    Edge {edge_counter:>6}: Node {u} <-> Node {v}  "
+                  f"({label}, {distance:.2f} km)")
 
         return True
 
     # 2. Add 4-connected local roads (right + down only to avoid duplicates)
+    if verbose:
+        print(f"\n  Phase 2/4: Adding local roads...")
+    local_before = edge_counter
     for r in range(rows):
         for c in range(cols):
             if c + 1 < cols:
@@ -142,8 +173,14 @@ def generate_graph(
             if r + 1 < rows:
                 add_road_by_cells(r, c, r + 1, c, local_speed,
                                   0.8, 1.2, "local_straight")
+    local_count = edge_counter - local_before
+    if verbose:
+        print(f"  -> {local_count} local roads created.")
 
     # 3. Add diagonal shortcuts (~20 %)
+    if verbose:
+        print(f"\n  Phase 3/4: Adding diagonal shortcuts (~{int(diag_prob*100)}% chance per cell)...")
+    diag_before = edge_counter
     for r in range(rows):
         for c in range(cols):
             if random.random() > diag_prob:
@@ -159,9 +196,15 @@ def generate_graph(
                 rr, cc = random.choice(candidates)
                 add_road_by_cells(r, c, rr, cc, local_speed,
                                   0.8, 1.2, "local_diagonal")
+    diag_count = edge_counter - diag_before
+    if verbose:
+        print(f"  -> {diag_count} diagonal shortcuts created.")
 
     # 4. Add highway edges
+    if verbose:
+        print(f"\n  Phase 4/4: Adding highway express routes...")
     all_cells = list(cell_to_id.keys())
+    highway_before = edge_counter
     added = 0
     attempts = 0
     max_attempts = highway_edges * 25
@@ -183,6 +226,22 @@ def generate_graph(
                                0.90, 1.05, "highway")
         if ok:
             added += 1
+    highway_count = edge_counter - highway_before
+    if verbose:
+        print(f"  -> {highway_count} highways created.")
+
+    # Build coordinate map: node_id -> (row, col)
+    graph.coord_map = {}
+    for (r, c), node_id in cell_to_id.items():
+        graph.coord_map[str(node_id)] = (r, c)
+
+    if verbose:
+        print(f"\n  === Generation Summary ===")
+        print(f"    Total nodes: {graph.node_count()}")
+        print(f"    Total edges: {graph.edge_count()}")
+        print(f"      - Local roads:       {local_count}")
+        print(f"      - Diagonal shortcuts: {diag_count}")
+        print(f"      - Highways:           {highway_count}")
 
     return graph
 

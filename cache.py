@@ -122,7 +122,8 @@ def identify_hubs(graph, top_n=50):
     return sorted_nodes[:top_n]
 
 
-def precompute_hub_paths(graph, cache, hubs, departure_hours=None):
+def precompute_hub_paths(graph, cache, hubs, departure_hours=None,
+                         verbose=True):
     """
     Precompute paths between all pairs of hubs at given hours.
 
@@ -149,6 +150,11 @@ def precompute_hub_paths(graph, cache, hubs, departure_hours=None):
                           set(), set(), result_distance)
                 count += 1
 
+                if verbose:
+                    print(f"    [{count:>5}/{total_pairs}] "
+                          f"Node {source} -> Node {destination} "
+                          f"(distance, hour {hour})")
+
                 # Time mode
                 result_time = dijkstra_time(
                     graph, source, destination, departure_hour=hour)
@@ -156,10 +162,13 @@ def precompute_hub_paths(graph, cache, hubs, departure_hours=None):
                           set(), set(), result_time)
                 count += 1
 
-                if count % 100 == 0:
-                    print(f"Precomputed {count}/{total_pairs} hub paths")
+                if verbose:
+                    print(f"    [{count:>5}/{total_pairs}] "
+                          f"Node {source} -> Node {destination} "
+                          f"(time, hour {hour})")
 
-    print(f"Precomputed {count} hub paths")
+    if verbose:
+        print(f"  -> Precomputed {count} hub paths.")
     return count
 
 

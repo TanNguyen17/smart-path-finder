@@ -28,6 +28,7 @@ class Graph:
     def __init__(self):
         self.adjacent = {}   # node_id -> [(neighbor, distance, [24 travel times])]
         self.nodes = set()   # set of all node IDs
+        self.coord_map = {}  # node_id -> (row, col), optional grid coordinates
 
     def add_edge(self, u, v, distance, travel_times):
         """
@@ -108,6 +109,11 @@ class Graph:
                     "travel_times": travel_times
                 })
 
+        if self.coord_map:
+            payload["coord_map"] = {
+                str(k): list(v) for k, v in self.coord_map.items()
+            }
+
         with open(filepath, "w", encoding="utf-8") as f:
             json.dump(payload, f, indent=4)
 
@@ -130,6 +136,10 @@ class Graph:
                 distance = float(edge["distance"])
                 travel_times = [float(x) for x in edge["travel_times"]]
                 graph.adjacent[u].append((v, distance, travel_times))
+
+        if "coord_map" in payload:
+            for k, v in payload["coord_map"].items():
+                graph.coord_map[str(k)] = tuple(v)
 
         return graph
 
