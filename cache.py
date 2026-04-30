@@ -13,7 +13,6 @@ Complexity of hub precomputation:
     Space:  O(H^2 * D * P)               where P = average path length stored
 """
 
-
 class PathCache:
     """Dictionary-based cache for routing results."""
 
@@ -94,6 +93,9 @@ def run_query_cached(graph, cache, source, destination,
     if mode == "distance":
         result = bidirectional_dijkstra_distance(graph, source, destination,
                                                  avoid_nodes, avoid_edges, departure_hour)
+    elif mode == "distance_std":
+        result = dijkstra_distance(graph, source, destination,
+                                  avoid_nodes, avoid_edges, departure_hour)
     elif mode == "time":
         result = dijkstra_time(graph, source, destination,
                                avoid_nodes, avoid_edges, departure_hour)

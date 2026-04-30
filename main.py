@@ -79,6 +79,10 @@ def print_help(menu_type):
     print(HELP_MENUS.get(menu_type, ""))
 
 def infer_grid_size(graph):
+    """
+    Attempt to determine the grid dimensions (rows/cols) from node IDs.
+    Caches the result on the graph object to avoid repeated O(V) scans.
+    """
     # Check if already cached on graph
     rows = getattr(graph, "_inferred_rows", None)
     cols = getattr(graph, "_inferred_cols", None)
@@ -111,6 +115,7 @@ def infer_grid_size(graph):
     return None, None
 
 def print_map_info(graph, week_id):
+    """Display comprehensive information about the current graph state."""
     rows, cols = infer_grid_size(graph)
     print("Map information:")
     print(f"  - Nodes: {graph.node_count()}")
@@ -129,6 +134,7 @@ def print_map_info(graph, week_id):
         print(f"   {rows // 2}_{cols // 2} = center")
 
 def print_examples(graph):
+    """Show copy-ready example queries tailored to the current map size."""
     rows, cols = infer_grid_size(graph)
     if not rows or not cols:
         print("Example: query A B departure 8")
@@ -142,6 +148,7 @@ def print_examples(graph):
     print(f"  query 0_0 {rows - 1}_{cols - 1} avoid_edges 0_0-0_1 departure 8")
 
 def print_sample_nodes(graph):
+    """Print a set of valid node IDs to help the user get started."""
     rows, cols = infer_grid_size(graph)
     if not rows or not cols: 
         print("Sample nodes:", ", ".join(sorted(list(graph.nodes))[:10]))
@@ -160,6 +167,7 @@ def print_sample_nodes(graph):
         print(f" {node} ({exists})")
 
 def check_node(graph, node):
+    """Verify if a node exists and display its immediate connections."""
     node = str(node)
     if node not in graph.nodes:
         print(f"Node '{node}' does not exist.")
@@ -190,16 +198,31 @@ def handle_query(user_input, graph, cache):
     if query.departure_hour is not None:
         print(f"Departure Time: {query.departure_hour}:00")
 
-    # Run and display Distance query
-    start_dist = time.perf_counter()
-    res_dist, hit_dist = run_query_cached(
+    # Run and display Distance query comparison
+    # 1. Standard Dijkstra calculation
+    start_std = time.perf_counter()
+    res_std, hit_std = run_query_cached(
+        graph, cache, query.source, query.destination,
+        query.departure_hour, "distance_std", query.avoid_nodes, query.avoid_edges
+    )
+    time_std = (time.perf_counter() - start_std) * 1000
+
+    # 2. Bidirectional Dijkstra calculation
+    start_bidir = time.perf_counter()
+    res_bidir, hit_bidir = run_query_cached(
         graph, cache, query.source, query.destination,
         query.departure_hour, "distance", query.avoid_nodes, query.avoid_edges
     )
-    time_dist = (time.perf_counter() - start_dist) * 1000
+    time_bidir = (time.perf_counter() - start_bidir) * 1000
     
-    print(format_result("distance", res_dist))
-    print(f"└─ [Time: {time_dist:.2f}ms | Cache: {'HIT' if hit_dist else 'MISS'}]")
+    # Result Display
+    # A. Standard Dijkstra Output
+    print(format_result("distance", res_std, label="Shortest distance path (Standard Dijkstra)"))
+    print(f"└─ [Time: {time_std:.2f}ms | Cache: {'HIT' if hit_std else 'MISS'}]")
+
+    # B. Bidirectional Dijkstra Output
+    print(f"\n{format_result('distance', res_bidir, label='Shortest distance path (Bidirectional Dijkstra)')}")
+    print(f"└─ [Time: {time_bidir:.2f}ms | Cache: {'HIT' if hit_bidir else 'MISS'}]")
 
     # Run and display Time query
     start_time = time.perf_counter()
@@ -213,7 +236,8 @@ def handle_query(user_input, graph, cache):
     print(f"└─ [Time: {time_time:.2f}ms | Cache: {'HIT' if hit_time else 'MISS'}]\n")
 
 def main():
-    print("=== Smart Path Finder CLI ===\nAn advanced routing engine with traffic-aware caching.")
+    print("=== Smart Path Finder CLI ===")
+    print("An advanced routing engine with traffic-aware caching.")
     
     # A. Initial State: Load or Generate
     graph = None
@@ -259,8 +283,11 @@ def main():
     # B. System Initialization
     cache = PathCache()
     print("\nIdentifying transit hubs...")
-    hubs = identify_hubs(graph, top_n=30)
-    print(f"Hubs active: {', '.join(hubs[:5])}... and {len(hubs)-5} more.")
+    # Scale hubs based on map size: roughly 30 hubs per 4900 nodes, capped between 10 and 50
+    node_count = graph.node_count()
+    num_hubs = max(10, min(50, int(30 * node_count / 4900)))
+    hubs = identify_hubs(graph, top_n=num_hubs)
+    print(f"Hubs active: {len(hubs)} (proportional to map size)")
 
     print("Precomputing traffic patterns for hubs...")
     count = precompute_hub_paths(graph, cache, hubs, departure_hours=[0, 8, 12, 18])

@@ -146,8 +146,8 @@ class Graph:
             raise TypeError("Travel times must be a list")
         if len(travel_times) != 24:
             raise ValueError("Travel times must contain exactly 24 values")
-        for time in travel_times:
-            if time <= 0:
+        for t_val in travel_times:
+            if t_val <= 0:
                 raise ValueError("Each travel time must be positive")
 
 
