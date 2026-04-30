@@ -25,7 +25,8 @@ HELP_MENUS = {
 ==============================
 STARTUP HELP
 ==============================
-1. Generate New Graph: Creates a synthetic 70x70 grid.
+1. Generate New Graph: Creates a synthetic grid map.
+   You will be asked for the number of rows and columns.
    Includes diagonal paths and high-speed 'highways'.
 2. Load from File: Enter the path to a saved .graph file.
 quit: Exit the program.
@@ -213,15 +214,30 @@ def main():
     # A. Initial State: Load or Generate
     graph = None
     while not graph:
-        print("\n[1] Generate 70x70 Graph\n[2] Load Graph from File\nType 'help' for info or 'quit' to exit.")
-        
+        print("\n[1] Generate New Graph\n[2] Load Graph from File\nType 'help' for info or 'quit' to exit.")
+
         choice = input("startup > ").strip().lower()
 
         if choice == 'help':
             print_help("startup")
         elif choice == '1':
-            print("\nGenerating graph (70x70 grid + highways)...")
-            graph = generate_graph(rows=70, cols=70, diag_prob=0.20, highway_edges=900, seed=42, id_mode="str")
+            # Prompt for grid size
+            try:
+                rows_input = input("Enter number of rows (default 70): ").strip()
+                cols_input = input("Enter number of columns (default 70): ").strip()
+                rows = int(rows_input) if rows_input else 70
+                cols = int(cols_input) if cols_input else 70
+                if rows < 2 or cols < 2:
+                    print("Error: Rows and columns must be at least 2.")
+                    continue
+            except ValueError:
+                print("Error: Please enter valid integers.")
+                continue
+
+            # Scale highway edges proportionally to grid area
+            highway_edges = max(10, int(900 * (rows * cols) / (70 * 70)))
+            print(f"\nGenerating graph ({rows}x{cols} grid + {highway_edges} highways)...")
+            graph = generate_graph(rows=rows, cols=cols, diag_prob=0.20, highway_edges=highway_edges, seed=42, id_mode="str")
             print(f"Ready: {graph.node_count()} nodes, {graph.edge_count()} edges.")
         elif choice == '2':
             filename = input("Enter filename: ").strip()
