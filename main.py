@@ -41,12 +41,16 @@ query <src> <dest> [options]
       avoid_nodes n1,n2   - Skip specific nodes.
       avoid_edges n1-n2   - Skip specific road segments.
       departure <hour>    - Set time (0-23) for traffic.
+
 map_info
     Show node naming rules and map size.
+
 examples
     Show copy-ready example queries.
+
 sample_nodes
     Show sample node IDs for this map.
+    
 check_node <node>
     Check whether a node exists and list its neighbors.
 
