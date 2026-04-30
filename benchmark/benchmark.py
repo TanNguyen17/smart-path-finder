@@ -20,22 +20,30 @@ For each (graph, side, pair_kind) cell we draw ``--trials`` random
 ``(src, dst, avoid_nodes)`` queries ONCE and run all three algorithms
 on the same query list. That makes the comparison apples-to-apples:
 any difference between algorithms reflects algorithmic behaviour, not
-divergent random sampling. Three metrics are recorded per query:
-``nodes_explored``, ``total_distance``, ``total_time``.
+divergent random sampling. Four metrics are recorded per query:
+``nodes_explored``, ``total_distance``, ``total_time``, and
+``runtime_ms`` (wall-clock time spent inside the algorithm call).
 
 Outputs ``benchmark_results.csv`` and a markdown summary on stdout.
 
 Run with::
 
-    python benchmark.py --sides 30,50,70,100 --trials 20
+    python3 benchmark.py --sides 30,50,70,100 --trials 20
 """
 
 from __future__ import annotations
+import sys
+import os
 
+# Get the parent directory (smart-path-finder) and add it to Python's path
+current_dir = os.path.dirname(os.path.abspath(__file__))
+parent_dir = os.path.dirname(current_dir)
+sys.path.append(parent_dir)
 import argparse
 import csv
 import random
 import statistics
+import time
 from pathlib import Path
 
 from algorithms import (
@@ -206,6 +214,10 @@ def run_one_query(
     query and return the per-query record dict.
     """
     fn = ALGORITHMS[algorithm]
+    # Wall-clock the algorithm itself only - pair-picking and avoid
+    # sampling are done outside this function and shouldn't pollute the
+    # per-query runtime metric.
+    t0 = time.perf_counter()
     result = fn(
         graph,
         src,
@@ -214,18 +226,14 @@ def run_one_query(
         avoid_edges=set(),
         departure_hour=8,
     )
-    sr, sc = parse_rc(src)
-    dr, dc = parse_rc(dst)
-    manhattan = abs(sr - dr) + abs(sc - dc)
+    runtime_ms = (time.perf_counter() - t0) * 1000.0
     if result is None:
         nodes_explored = 0
-        path_len = 0
         total_distance = 0.0
         total_time = 0.0
         found = 0
     else:
         nodes_explored = int(result.get("nodes_explored", 0))
-        path_len = len(result.get("path", []))
         total_distance = float(result.get("total_distance", 0.0))
         total_time = float(result.get("total_time", 0.0))
         found = 1
@@ -238,11 +246,10 @@ def run_one_query(
         "pair_kind": pair_kind,
         "src": src,
         "dst": dst,
-        "manhattan": manhattan,
         "nodes_explored": nodes_explored,
-        "path_len": path_len,
         "total_distance": total_distance,
         "total_time": total_time,
+        "runtime_ms": runtime_ms,
         "avoid_count": len(avoid_nodes),
         "found": found,
     }
@@ -259,7 +266,7 @@ def percentile(values: list[float], q: float) -> float:
 def summarise(records: list[dict]):
     """Group records by (graph, side, algorithm, pair_kind) and compute
     mean / median / p95 of nodes_explored plus mean total_distance,
-    mean total_time, mean path length, and found-rate.
+    mean total_time, mean runtime_ms, and found-rate.
     """
     buckets: dict[tuple, list[dict]] = {}
     for r in records:
@@ -269,10 +276,9 @@ def summarise(records: list[dict]):
     out = []
     for key, rs in sorted(buckets.items()):
         explored = [r["nodes_explored"] for r in rs if r["found"]]
-        path_lens = [r["path_len"] for r in rs if r["found"]]
         distances = [r["total_distance"] for r in rs if r["found"]]
         times = [r["total_time"] for r in rs if r["found"]]
-        manhattans = [r["manhattan"] for r in rs]
+        runtimes = [r["runtime_ms"] for r in rs if r["found"]]
         if not explored:
             stats = {
                 "trials": len(rs),
@@ -281,8 +287,7 @@ def summarise(records: list[dict]):
                 "p95_explored": 0.0,
                 "mean_distance": 0.0,
                 "mean_time": 0.0,
-                "mean_path_len": 0.0,
-                "mean_manhattan": statistics.mean(manhattans) if manhattans else 0.0,
+                "mean_runtime_ms": 0.0,
                 "found_rate": 0.0,
             }
         else:
@@ -293,8 +298,7 @@ def summarise(records: list[dict]):
                 "p95_explored": percentile(explored, 0.95),
                 "mean_distance": statistics.mean(distances),
                 "mean_time": statistics.mean(times),
-                "mean_path_len": statistics.mean(path_lens),
-                "mean_manhattan": statistics.mean(manhattans),
+                "mean_runtime_ms": statistics.mean(runtimes),
                 "found_rate": len(explored) / len(rs),
             }
         out.append((key, stats))
@@ -315,10 +319,9 @@ def print_markdown_table(summary) -> None:
     print(
         "\n| graph | side | algorithm | pair_kind | trials | "
         "mean_explored | median_explored | p95_explored | "
-        "mean_distance | mean_time | mean_path_len | mean_manhattan | "
-        "found_rate |"
+        "mean_distance | mean_time | mean_runtime_ms | found_rate |"
     )
-    print("|---|---:|---|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|")
+    print("|---|---:|---|---|---:|---:|---:|---:|---:|---:|---:|---:|")
     for key, s in summary:
         graph_kind, side, algo, pair_kind = key
         print(
@@ -326,8 +329,7 @@ def print_markdown_table(summary) -> None:
             f"{s['trials']} | {s['mean_explored']:.0f} | "
             f"{s['median_explored']:.0f} | {s['p95_explored']:.0f} | "
             f"{s['mean_distance']:.2f} | {s['mean_time']:.2f} | "
-            f"{s['mean_path_len']:.1f} | {s['mean_manhattan']:.1f} | "
-            f"{s['found_rate']:.2f} |"
+            f"{s['mean_runtime_ms']:.3f} | {s['found_rate']:.2f} |"
         )
 
 

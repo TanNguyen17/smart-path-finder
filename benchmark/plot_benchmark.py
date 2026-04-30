@@ -1,6 +1,6 @@
 """Post-hoc visualisation of ``benchmark_results.csv``.
 
-Plots three per-query metrics across the three pathfinding algorithms,
+Plots four per-query metrics across the three pathfinding algorithms,
 broken down by graph density (sparse / dense) and source-destination
 distance regime (close / far). Every benchmark scenario uses random
 avoidance (count scaled with grid side) so the comparison is uniform.
@@ -9,12 +9,13 @@ Requirements (install only if you want to run this)::
 
     pip install pandas matplotlib
 
-Outputs PNG bar charts grouped into three sibling folders, one per
+Outputs PNG bar charts grouped into four sibling folders, one per
 metric:
 
-* ``compare_node_explore/``  - bars of mean ``nodes_explored``
+* ``compare_node_explore/``   - bars of mean ``nodes_explored``
 * ``compare_total_distance/`` - bars of mean ``total_distance``
 * ``compare_total_time/``     - bars of mean ``total_time``
+* ``compare_runtime/``        - bars of mean ``runtime_ms``
 
 Each folder contains:
 
@@ -27,8 +28,8 @@ Each folder contains:
 
 Usage::
 
-    python plot_benchmark.py
-    python plot_benchmark.py --csv other_results.csv --out figs/
+    python3 plot_benchmark.py
+    python3 plot_benchmark.py --csv other_results.csv --out figs/
 """
 
 from __future__ import annotations
@@ -44,6 +45,7 @@ METRICS: list[tuple[str, str, str]] = [
     ("nodes_explored", "mean nodes explored", "compare_node_explore"),
     ("total_distance", "mean total distance (km)", "compare_total_distance"),
     ("total_time", "mean total travel time (h)", "compare_total_time"),
+    ("runtime_ms", "mean runtime (ms)", "compare_runtime"),
 ]
 
 
@@ -61,6 +63,8 @@ def load(csv_path: Path) -> pd.DataFrame:
         df["total_distance"] = 0.0
     if "total_time" not in df.columns:
         df["total_time"] = 0.0
+    if "runtime_ms" not in df.columns:
+        df["runtime_ms"] = 0.0
     return df
 
 
@@ -76,6 +80,7 @@ def summarise(df: pd.DataFrame) -> pd.DataFrame:
         mean_explored=("nodes_explored", "mean"),
         mean_distance=("total_distance", "mean"),
         mean_time=("total_time", "mean"),
+        mean_runtime_ms=("runtime_ms", "mean"),
     )
 
 
@@ -87,6 +92,7 @@ def metric_to_summary_col(metric: str) -> str:
         "nodes_explored": "mean_explored",
         "total_distance": "mean_distance",
         "total_time": "mean_time",
+        "runtime_ms": "mean_runtime_ms",
     }[metric]
 
 
