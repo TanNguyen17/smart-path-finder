@@ -49,8 +49,19 @@ class PathCache:
         return self.cache.get(key, None)
 
     def set(self, source, destination, departure_hour, mode,
-            avoid_nodes, avoid_edges, result):
-        """Store a result in the cache."""
+            avoid_nodes, avoid_edges, result, max_size=5000):
+        """
+        Store a result in the cache. 
+        If the cache exceeds max_size, the oldest 10% of entries are removed 
+        to manage memory (FIFO eviction).
+        """
+        if len(self.cache) >= max_size:
+            # Drop the oldest 10% of entries
+            num_to_remove = max(1, int(max_size * 0.1))
+            keys = list(self.cache.keys())
+            for i in range(num_to_remove):
+                del self.cache[keys[i]]
+
         key = self._make_key(source, destination, departure_hour, mode,
                              avoid_nodes, avoid_edges)
         self.cache[key] = result
