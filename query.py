@@ -83,7 +83,7 @@ def parse_query(query_string):
     )
 
 
-def format_result(mode, result):
+def format_result(mode, result, label=None):
     """
     Format a routing result dict for display.
 
@@ -92,6 +92,7 @@ def format_result(mode, result):
     mode   : "distance" or "time"
     result : dict with keys path, total_distance, total_time, nodes_explored
              or None if no path was found
+    label  : optional custom header string
     """
     if result is None:
         return f"=== No path found ({mode}) ===\n"
@@ -101,7 +102,9 @@ def format_result(mode, result):
     total_travel_time = result["total_time"]
     nodes_explored = result["nodes_explored"]
 
-    if mode == "distance":
+    if label:
+        header = f"=== {label} ==="
+    elif mode == "distance":
         header = "=== Shortest distance path ==="
     elif mode == "time":
         header = "=== Quickest path ==="

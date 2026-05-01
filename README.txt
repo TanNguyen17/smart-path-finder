@@ -14,11 +14,12 @@
   python main.py
 
 On startup you will be prompted to either:
-  1) Generate a new graph (70x70 grid with ~4,900 nodes and ~11,500 edges)
-  2) Load a previously saved graph from a JSON file (e.g., graph.json)
+  1) Generate a new graph: You can specify custom grid dimensions (e.g., 70x70).
+     Includes diagonal paths and high-speed highway edges.
+  2) Load a previously saved graph from a JSON file (e.g., graph.json).
 
-After the graph is loaded, the system precomputes hub paths and enters
-an interactive command loop.
+After the graph is loaded, the system precomputes hub paths (scaling with 
+map size) and enters an interactive command loop.
 
 To run the evaluation benchmarks:
   python evaluation.py
@@ -42,28 +43,41 @@ Examples:
   query 10_10 50_50 avoid_nodes 30_30,35_35
   query 10_10 50_50 avoid_edges 20_20-21_20,30_30-31_30 departure 17
 
-Other commands:
-  stats    - Show graph and cache statistics
-  save <f> - Save the current graph to a file
-  update   - Simulate a weekly travel-time update (invalidates cache)
-  help     - Show available commands
-  quit     - Exit the program
+System Commands:
+  map_info     - Show node naming rules and current map dimensions
+  examples     - Show copy-ready example queries for this map
+  sample_nodes - Show valid sample node IDs
+  check_node <n> - Check node existence and list its neighbors
+  stats        - Show graph and cache performance statistics
+  save <f>     - Save the current graph to a JSON file
+  update       - Simulate a weekly traffic-data update (invalidates cache)
+  help         - Show full command list
+  quit         - Exit the program
 
 4. OUTPUT FORMAT
 ----------------
-For each query, the system returns TWO paths:
+For each query, the system performs a comparative analysis:
 
-  === Shortest distance path ===
+  === Shortest distance path (Standard Dijkstra) ===
   Total distance: 97.14 km
   Total travel time: 3.42 hours
   Path: 0_0 -> 0_1 -> ... -> 69_69
+  Nodes explored: 4500
+  └─ [Time: 45.20ms | Cache: MISS]
 
-  === Quickest path ===
+  === Shortest distance path (Bidirectional Dijkstra) ===
+  Total distance: 97.14 km
+  Total travel time: 3.42 hours
+  Path: 0_0 -> 0_1 -> ... -> 69_69
+  Nodes explored: 2100
+  └─ [Time: 22.15ms | Cache: MISS]
+
+  === Quickest path (Time-Aware Dijkstra) ===
   Total distance: 102.30 km
   Total travel time: 2.81 hours
   Path: 0_0 -> 1_0 -> ... -> 69_69
-
-Each result also reports computation time and whether a cache hit occurred.
+  Nodes explored: 4800
+  └─ [Time: 50.10ms | Cache: MISS]
 
 5. FILE STRUCTURE
 -----------------
@@ -71,9 +85,9 @@ Each result also reports computation time and whether a cache hit occurred.
   graph.py        - Graph data structure (adjacency list) with save/load
   heap.py         - Custom MinHeap with O(log V) decrease-key
   algorithms.py   - Dijkstra (distance, time) and Bidirectional Dijkstra
+  query.py        - Query parser and result formatter
   generator.py    - Synthetic graph generator with traffic profiles
   cache.py        - Path caching and hub precomputation
-  query.py        - Query parser and result formatter
   evaluation.py   - Benchmarking and empirical evaluation suite
 
 6. DEMO VIDEO LINK

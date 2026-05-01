@@ -1,0 +1,91 @@
+Algorithms & Analysis 2026A 
+Undergraduate Project – Smart Path Finder 
+Project Overview 
+In this project, you will design and implement a Smart Path Finder - a Python program that 
+computes routes between locations in a map. 
+The system operates on a graph where nodes represent locations and edges represent roads 
+connecting those locations. Each road contains information about both distance and travel 
+time, where travel time may vary depending on the hour of the day. 
+Your system must process routing queries and return meaningful path suggestions based on 
+diCerent criteria. You are expected to design appropriate data structures and algorithms, and 
+evaluate your solution through analysis and experiments. 
+Problem Description 
+You are required to generate a graph representing a map: 
+• Nodes represent locations 
+• Edges represent roads between locations 
+Your graph must be designed to represent a large-scale map, including: 
+• Thousands of nodes 
+• A realistic number of edges based on real-world road networks 
+Each edge contains: 
+• A ﬁxed value representing the distance between two nodes 
+• A list of 24 values, where each value represents the time required to traverse the 
+edge at a given hour of the day (0–23) 
+This time list is expected to be updated periodically (e.g., weekly). 
+Query Speciﬁcation 
+Each query includes: 
+• A source node (mandatory) 
+• A destination node (mandatory) 
+• A list of nodes to avoid (optional) 
+• A list of edges to avoid (optional) 
+Output Requirements 
+For each query, your system must return: 
+• A path that minimises total distance 
+• A path that minimises total travel time 
+For each path, your system must also report: 
+• The sequence of nodes in the path 
+• The total distance 
+• The total travel time 
+Constraints 
+• Implementation must be in Python 
+• External libraries are not allowed 
+• All data structures and algorithms must be implemented by your group 
+Submission Requirements 
+Technical Report 
+The report must not exceed 20 pages of main content (excluding cover page, table of 
+contents, references, and appendix). 
+Main text font size: 11 or 12 points 
+The report must include: 
+• Member and Contribution 
+o List all group members 
+o Specify the percentage contribution of each member 
+• Design of Data Structures and Algorithms 
+o Describe how the graph is represented 
+o Describe the approaches used to compute paths 
+o Explain key design decisions 
+• Evaluation: your evaluation must include: 
+o Theoretical analysis: 
+§ Time complexity 
+§ Space complexity 
+o Empirical evaluation: 
+§ Runtime measurements 
+§ Comparison across diCerent scenarios 
+• Conclusion 
+o Summary of what has been implemented 
+o Limitations of the system 
+o Possible improvements or extensions 
+• Appendix – Use of AI Tools 
+This section must be included in the appendix of the report. You must clearly describe 
+how AI tools (e.g., ChatGPT, Copilot) were used: 
+o Tools used 
+o Strategies or procedures followed 
+o Examples of prompts 
+o How outputs were validated or reﬁned 
+o How responsible and ethical use was ensured 
+o Overall reﬂection on the use of AI 
+Demo Video 
+• Maximum length: 10 minutes 
+• All group members must appear in the video 
+The video must demonstrate: 
+• Environment setup 
+• Running the program 
+• Executing queries 
+• Presenting and evaluating outputs 
+Python Source Code 
+All source code must be submitted. A ﬁle named main.py must be provided to launch the 
+system. 
+In the source code, provide a README.txt ﬁle that contains 
+• Instructions to set up the environment 
+• How to run the program 
+• Description of input format 
+• Description of output 
+• Link to the demo video 

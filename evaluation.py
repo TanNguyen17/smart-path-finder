@@ -13,6 +13,7 @@ Scenarios covered:
 
 import time
 import random
+import math
 
 
 # ---------------------------------------------------------------------------
@@ -282,7 +283,6 @@ def scaling_analysis(sizes=None, num_queries=20, seed=42):
         avg_explored = (sum(explored_counts) / len(explored_counts)
                         if explored_counts else 0)
 
-        import math
         e_log_v = e * math.log2(v) if v > 0 else 0
 
         print(f"{rows}x{cols:>3}  {v:>7}  {e:>7}  "
