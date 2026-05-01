@@ -195,6 +195,15 @@ def handle_query(user_input, graph, cache):
 
     # Visual confirmation of the human-readable location
     print(f"\n--- Route: {node_to_human(query.source)} → {node_to_human(query.destination)} ---")
+
+    # Node existence validation
+    if query.source not in graph.nodes or query.destination not in graph.nodes:
+        print(f"[!] Error: One or both locations do not exist on the current map.")
+        print(f"    - Source '{query.source}': {'VALID' if query.source in graph.nodes else 'NOT FOUND'}")
+        print(f"    - Destination '{query.destination}': {'VALID' if query.destination in graph.nodes else 'NOT FOUND'}")
+        print("    Use 'sample_nodes' or 'map_info' to find valid coordinates.")
+        return
+
     if query.departure_hour is not None:
         print(f"Departure Time: {query.departure_hour}:00")
 
