@@ -68,6 +68,7 @@ def generate_graph(
     local_speed=40.0,
     highway_speed=80.0,
     min_highway_grid_dist=12,
+    drop_prob=0.0,
     seed=42,
     id_mode="str"
 ):
@@ -82,6 +83,9 @@ def generate_graph(
     local_speed            : speed on local roads (distance units / hour)
     highway_speed          : speed on highways
     min_highway_grid_dist  : minimum Manhattan distance for highways
+    drop_prob              : probability of dropping each base 4-grid edge
+                             (0.0 keeps every street, higher values produce
+                             sparser layouts)
     seed                   : random seed for reproducibility
     id_mode                : "str" for "r_c" labels, "int" for integer IDs
 
@@ -133,13 +137,16 @@ def generate_graph(
 
         return True
 
-    # 2. Add 4-connected local roads (right + down only to avoid duplicates)
+    # 2. Add 4-connected local roads (right + down only to avoid duplicates).
+    #    With drop_prob > 0 each candidate edge is randomly skipped, producing
+    #    a genuinely sparse grid (closed streets). With drop_prob == 0 the
+    #    behaviour is identical to the previous version.
     for r in range(rows):
         for c in range(cols):
-            if c + 1 < cols:
+            if c + 1 < cols and random.random() >= drop_prob:
                 add_road_by_cells(r, c, r, c + 1, local_speed,
                                   0.8, 1.2, "local_straight")
-            if r + 1 < rows:
+            if r + 1 < rows and random.random() >= drop_prob:
                 add_road_by_cells(r, c, r + 1, c, local_speed,
                                   0.8, 1.2, "local_straight")
 
